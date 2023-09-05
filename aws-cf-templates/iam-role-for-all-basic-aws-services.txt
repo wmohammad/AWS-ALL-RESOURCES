@@ -1,0 +1,41 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Create an IAM user with access to various AWS services
+
+Resources:
+  RDSUser:
+    Type: 'AWS::IAM::User'
+    Properties:
+      UserName: aws-rds-user
+
+  RDSUserAccessKey:
+    Type: 'AWS::IAM::AccessKey'
+    Properties:
+      UserName: !Ref RDSUser
+
+  RDSUserPolicy:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: RDSUserFullAccessPolicy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'rds:*'
+              - 'lambda:*'
+              - 'cloudwatch:*'
+              - 's3:*'
+              - 'ses:*'
+              - 'ec2:*'
+              # Add additional services/actions here as needed
+            Resource: '*'
+      Users:
+        - !Ref RDSUser
+
+Outputs:
+  IAMUserName:
+    Description: IAM username for the created user
+    Value: !Ref RDSUser
+  IAMUserAccessKey:
+    Description: Access key for the created user
+    Value: !GetAtt RDSUserAccessKey.SecretAccessKey
