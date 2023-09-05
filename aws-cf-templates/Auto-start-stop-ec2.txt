@@ -1,0 +1,83 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Automation Stack for EC2 Instance
+
+Resources:
+  LambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: LambdaExecutionRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AWSLambda_FullAccess'
+    
+  EC2ExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: EC2ExecutionRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+
+  LambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      FunctionName: EC2AutomationFunction
+      Runtime: python3.8
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          import boto3
+
+          def lambda_handler(event, context):
+              # Replace 'your-instance-id' with your actual EC2 instance ID
+              instance_id = 'i-046ea073031eb5eac'
+              
+              # Check the current time in IST (Indian Standard Time)
+              import datetime
+              import pytz
+              ist = pytz.timezone('Asia/Kolkata')
+              current_time_ist = datetime.datetime.now(ist)
+              
+              # Define the start and stop times in IST
+              start_time = current_time_ist.replace(hour=9, minute=0, second=0, microsecond=0)
+              stop_time = current_time_ist.replace(hour=21, minute=0, second=0, microsecond=0)
+              
+              # Check if it's time to start or stop the instance
+              if current_time_ist >= stop_time:
+                  ec2 = boto3.client('ec2')
+                  ec2.stop(InstanceIds=[instance_id])
+              elif current_time_ist >= start_time:
+                  ec2 = boto3.client('ec2')
+                  ec2.start(InstanceIds=[instance_id])
+      Environment:
+        Variables:
+          INSTANCE_ID: i-046ea073031eb5eac
+      Timeout: 60
+
+  ScheduleRule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      Name: DailyStartStopRule
+      ScheduleExpression: 'cron(0 3,15 ? * SUN-SAT *)' # 9 AM and 9 PM IST
+      Targets:
+        - Arn: !GetAtt LambdaFunction.Arn
+          Id: TargetEC2AutomationFunction
+
+Outputs:
+  LambdaFunctionArn:
+    Value: !GetAtt LambdaFunction.Arn
+  EC2ExecutionRoleArn:
+    Value: !GetAtt EC2ExecutionRole.Arn
+  LambdaExecutionRoleArn:
+    Value: !GetAtt LambdaExecutionRole.Arn
