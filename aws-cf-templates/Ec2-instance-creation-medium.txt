@@ -1,0 +1,27 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: EC2 Instance with Elastic IP
+
+Resources:
+  MyEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.medium  # Change to your desired instance type
+      ImageId: ami-08e5424edfe926b43  # Ubuntu 20.04 AMI
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 10  # 10 GB EBS volume size
+            VolumeType: gp2  # General Purpose SSD (default)
+      KeyName: YourKeyName  # Replace with your SSH key pair name
+      Tags:
+        - Key: Name
+          Value: MyUbuntuEc2Medium
+
+  MyElasticIP:
+    Type: AWS::EC2::EIP
+
+  IPAssociation:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      InstanceId:
+        Ref: MyEC2Instance
