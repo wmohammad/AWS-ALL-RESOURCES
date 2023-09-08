@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Create an EC2 instance with Elastic IP
+
+Resources:
+  MyEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      ImageId: ami-08e5424edfe926b43  # Ubuntu 20.04 LTS
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 10
+      Tags:
+        - Key: Name
+          Value: MyUbuntuEc2
+
+  MyEIP:
+    Type: AWS::EC2::EIP
+
+  EIPAssociation:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      InstanceId:
+        Ref: MyEC2Instance
